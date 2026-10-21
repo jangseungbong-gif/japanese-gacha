@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>일본어 문장 조립 가챠 게임</title>
+  <style>
+    :root {
+      --bg-color: #f4f6fa;
+      --card-bg: #ffffff;
+      --primary: #4f46e5;
+      --c1: #f59e0b; /* 장소 (노랑/주황) */
+      --c2: #3b82f6; /* 인물 (파랑) */
+      --c3: #ec4899; /* 대상 (핑크) */
+      --c4: #10b981; /* 동작 (초록) */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      font-size: 1.05rem;
+      color: #64748b;
+    }
+
+    /* 상단 컨트롤 바 */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button.btn {
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button.btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      box-shadow: 0 6px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-secondary {
+      background-color: #ffffff;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-secondary:hover {
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    /* 4분할 머신 컨테이너 */
+    .machines-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 1200px;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 900px) {
+      .machines-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 500px) {
+      .machines-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 가챠 머신 카드 */
+    .gacha-machine {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+      border: 3px solid transparent;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .gacha-machine:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .gacha-machine.col-1 { border-color: var(--c1); }
+    .gacha-machine.col-2 { border-color: var(--c2); }
+    .gacha-machine.col-3 { border-color: var(--c3); }
+    .gacha-machine.col-4 { border-color: var(--c4); }
+
+    .capsule-badge {
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 20px;
+      color: #fff;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+    .col-1 .capsule-badge { background-color: var(--c1); }
+    .col-2 .capsule-badge { background-color: var(--c2); }
+    .col-3 .capsule-badge { background-color: var(--c3); }
+    .col-4 .capsule-badge { background-color: var(--c4); }
+
+    .machine-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 16px;
+    }
+
+    /* 캡슐 비주얼 */
+    .gacha-capsule-display {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%);
+      box-shadow: inset 0 -6px 10px rgba(0,0,0,0.08), 0 8px 16px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .gacha-capsule-display:hover {
+      transform: scale(1.06);
+    }
+
+    .gacha-machine.shake .gacha-capsule-display {
+      animation: capsuleShake 0.4s ease-in-out;
+    }
+
+    @keyframes capsuleShake {
+      0%, 100% { transform: rotate(0deg) scale(1.05); }
+      20% { transform: rotate(-15deg) scale(1.1); }
+      40% { transform: rotate(15deg) scale(1.1); }
+      60% { transform: rotate(-10deg) scale(1.05); }
+      80% { transform: rotate(10deg) scale(1.05); }
+    }
+
+    .tap-hint {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* 뽑힌 결과 카드 */
+    .result-card {
+      width: 100%;
+      min-height: 130px;
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .result-card.revealed {
+      background: #ffffff;
+      border-style: solid;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .col-1 .result-card.revealed { border-color: var(--c1); background: #fffbeb; }
+    .col-2 .result-card.revealed { border-color: var(--c2); background: #eff6ff; }
+    .col-3 .result-card.revealed { border-color: var(--c3); background: #fdf2f8; }
+    .col-4 .result-card.revealed { border-color: var(--c4); background: #ecfdf5; }
+
+    .furigana {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+
+    .main-text {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .meaning-text {
+      font-size: 0.95rem;
+      color: #475569;
+      margin-top: 6px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .show-meanings .meaning-text {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* 각 카드별 음성 듣기 버튼 */
+    .card-sound-btn {
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #cbd5e1;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+
+    .card-sound-btn:hover {
+      background: #f1f5f9;
+      color: #1e293b;
+      transform: scale(1.05);
+    }
+
+    .card-sound-btn:active {
+      transform: scale(0.95);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 하단 완성 문장 영역 */
+    .sentence-section {
+      width: 100%;
+      max-width: 1200px;
+      background: white;
+      border-radius: 24px;
+      padding: 28px 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      border: 2px solid #e2e8f0;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .sentence-header {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .complete-sentence {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .empty-prompt {
+      color: #94a3b8;
+      font-size: 1.15rem;
+      font-weight: 500;
+    }
+
+    .korean-translation-box {
+      margin-top: 20px;
+      padding: 16px 20px;
+      background-color: #f1f5f9;
+      border-radius: 14px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: none;
+    }
+
+    .show-meanings .korean-translation-box {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .sentence-actions {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-toggle {
+      background: #e0e7ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+    }
+    .btn-toggle:hover {
+      background: #c7d2fe;
+    }
+
+    .btn-sound {
+      background: #f1f5f9;
+      color: #334155;
+    }
+    .btn-sound:hover {
+      background: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🎰 일본어 문장 뽑기 팩토리</h1>
+    <p class="subtitle">각 파트의 캡슐을 터치하면 단어가 뽑히며 발음을 들을 수 있습니다. 문장의 뜻을 맞춰보세요!</p>
+  </header>
+
+  <div class="controls">
+    <button class="btn btn-primary" onclick="drawAll()">🎲 4개 파트 한 번에 뽑기</button>
+    <button class="btn btn-secondary" onclick="resetAll()">🔄 처음 상태로 초기화</button>
+  </div>
+
+  <main class="machines-grid" id="machinesGrid">
+    <!-- 1번 장소 -->
+    <div class="gacha-machine col-1" id="machine-0">
+      <span class="capsule-badge">1. 장소 (+で)</span>
+      <div class="machine-title">どこで (어디에서)</div>
+      <div class="gacha-capsule-display" onclick="drawPart(0)">
+        <div style="font-size: 2.8rem;">📍</div>
+        <div class="tap-hint">캡슐 터치</div>
+      </div>
+      <div class="result-card" id="card-0">
+        <div class="empty-prompt">카드를 뽑아주세요</div>
+      </div>
+    </div>
+
+    <!-- 2번 인물 -->
+    <div class="gacha-machine col-2" id="machine-1">
+      <span class="capsule-badge">2. 인물 (+と)</span>
+      <div class="machine-title">だれと (누구와)</div>
+      <div class="gacha-capsule-display" onclick="drawPart(1)">
+        <div style="font-size: 2.8rem;">👥</div>
+        <div class="tap-hint">캡슐 터치</div>
+      </div>
+      <div class="result-card" id="card-1">
+        <div class="empty-prompt">카드를 뽑아주세요</div>
+      </div>
+    </div>
+
+    <!-- 3번 대상 -->
+    <div class="gacha-machine col-3" id="machine-2">
+      <span class="capsule-badge">3. 대상 (+を/に)</span>
+      <div class="machine-title">何を (무엇을/에)</div>
+      <div class="gacha-capsule-display" onclick="drawPart(2)">
+        <div style="font-size: 2.8rem;">🎁</div>
+        <div class="tap-hint">캡슐 터치</div>
+      </div>
+      <div class="result-card" id="card-2">
+        <div class="empty-prompt">카드를 뽑아주세요</div>
+      </div>
+    </div>
+
+    <!-- 4번 동작 -->
+    <div class="gacha-machine col-4" id="machine-3">
+      <span class="capsule-badge">4. 동작 (동사원형)</span>
+      <div class="machine-title">する (하다/동작)</div>
+      <div class="gacha-capsule-display" onclick="drawPart(3)">
+        <div style="font-size: 2.8rem;">🏃</div>
+        <div class="tap-hint">캡슐 터치</div>
+      </div>
+      <div class="result-card" id="card-3">
+        <div class="empty-prompt">카드를 뽑아주세요</div>
+      </div>
+    </div>
+  </main>
+
+  <section class="sentence-section" id="sentenceSection">
+    <div class="sentence-header">✨ 완성된 일본어 문장</div>
+    <div class="complete-sentence" id="completeSentence">
+      <span class="empty-prompt">4개의 카드를 모두 뽑으면 완전한 문장이 조립됩니다.</span>
+    </div>
+
+    <div class="korean-translation-box" id="koreanTranslationBox"></div>
+
+    <div class="sentence-actions">
+      <button class="btn btn-toggle" id="toggleMeaningBtn" onclick="toggleMeanings()" style="display: none;">
+        👁️ 한국어 뜻 / 해석 보기
+      </button>
+      <button class="btn btn-sound" id="speakBtn" onclick="speakCompleteSentence()" style="display: none;">
+        🔊 전체 문장 발음 듣기
+      </button>
+    </div>
+  </section>
+
+  <script>
+    const wordData = [
+      [
+        { ja: "学校で", kana: "がっこうで", ko: "학교에서" },
+        { ja: "日本で", kana: "にほんで", ko: "일본에서" },
+        { ja: "夏祭りで", kana: "なつまつりで", ko: "여름축제에서" },
+        { ja: "屋台で", kana: "やたいで", ko: "포장마차에서" },
+        { ja: "カラオケで", kana: "カラオケで", ko: "노래방에서" },
+        { ja: "部屋で", kana: "へやで", ko: "방에서" },
+        { ja: "家で", kana: "いえで", ko: "집에서" },
+        { ja: "大阪で", kana: "おおさかで", ko: "오사카에서" }
+      ],
+      [
+        { ja: "友達と", kana: "ともだちと", ko: "친구와" },
+        { ja: "先生と", kana: "せんせいと", ko: "선생님과" },
+        { ja: "先輩と", kana: "せんぱいと", ko: "선배와" },
+        { ja: "後輩と", kana: "こうはいと", ko: "후배와" },
+        { ja: "弟と", kana: "おとうとと", ko: "남동생과" },
+        { ja: "妹と", kana: "いもうとと", ko: "여동생과" }
+      ],
+      [
+        { ja: "昼ごはんを", kana: "ひるごはんを", ko: "점심밥을" },
+        { ja: "温泉に", kana: "おんせんに", ko: "온천에" },
+        { ja: "花火を", kana: "はなび를", ko: "불꽃놀이를" },
+        { ja: "たこ焼きを", kana: "たこやきを", ko: "타코야키를" },
+        { ja: "Jポップを", kana: "ジェイポップを", ko: "J-POP을" },
+        { ja: "アニメを", kana: "アニメを", ko: "애니메이션을" },
+        { ja: "音楽を", kana: "おんがくを", ko: "음악을" },
+        { ja: "うどんを", kana: "うどんを", ko: "우동을" }
+      ],
+      [
+        { ja: "食べる", kana: "たべる", ko: "먹는다" },
+        { ja: "入る", kana: "はいる", ko: "들어간다" },
+        { ja: "する", kana: "する", ko: "한다" },
+        { ja: "話す", kana: "はなす", ko: "이야기한다" },
+        { ja: "歌う", kana: "うたう", ko: "노래한다" },
+        { ja: "見る", kana: "みる", ko: "본다" },
+        { ja: "聞く", kana: "きく", ko: "듣는다" }
+      ]
+    ];
+
+    let currentSelected = [null, null, null, null];
+    let showMeaningsState = false;
+
+    function playJapaneseVoice(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ja-JP';
+        utter.rate = 0.85;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    function drawPart(index, shouldSpeak = true) {
+      const machineEl = document.getElementById(`machine-${index}`);
+      const cardEl = document.getElementById(`card-${index}`);
+
+      machineEl.classList.remove('shake');
+      void machineEl.offsetWidth;
+      machineEl.classList.add('shake');
+
+      const items = wordData[index];
+      const chosen = items[Math.floor(Math.random() * items.length)];
+      currentSelected[index] = chosen;
+
+      setTimeout(() => {
+        cardEl.className = 'result-card revealed';
+        cardEl.innerHTML = `
+          <div class="furigana">${chosen.kana}</div>
+          <div class="main-text">${chosen.ja}</div>
+          <div class="meaning-text">${chosen.ko}</div>
+          <button class="card-sound-btn" onclick="event.stopPropagation(); playJapaneseVoice('${chosen.ja}')">
+            🔊 듣기
+          </button>
+        `;
+        if (shouldSpeak) {
+          playJapaneseVoice(chosen.ja);
+        }
+        updateSentence();
+      }, 200);
+    }
+
+    function drawAll() {
+      for (let i = 0; i < 4; i++) {
+        setTimeout(() => {
+          const isLast = (i === 3);
+          drawPart(i, false);
+          if (isLast) {
+            setTimeout(() => {
+              speakCompleteSentence();
+            }, 500);
+          }
+        }, i * 250);
+      }
+    }
+
+    function updateSentence() {
+      const isComplete = currentSelected.every(item => item !== null);
+      const sentenceEl = document.getElementById('completeSentence');
+      const translationBox = document.getElementById('koreanTranslationBox');
+      const toggleBtn = document.getElementById('toggleMeaningBtn');
+      const speakBtn = document.getElementById('speakBtn');
+
+      if (isComplete) {
+        const fullJa = currentSelected.map(item => item.ja).join(' ');
+        const fullKo = currentSelected.map(item => item.ko).join(' ');
+
+        sentenceEl.innerHTML = fullJa;
+        translationBox.innerHTML = `🇰🇷 뜻: ${fullKo}.`;
+
+        toggleBtn.style.display = 'inline-flex';
+        speakBtn.style.display = 'inline-flex';
+      } else {
+        const filled = currentSelected.filter(x => x !== null).length;
+        sentenceEl.innerHTML = `<span class="empty-prompt">4장 중 ${filled}장 선택됨... 나머지 캡슐도 뽑아주세요!</span>`;
+        toggleBtn.style.display = 'none';
+        speakBtn.style.display = 'none';
+      }
+    }
+
+    function toggleMeanings() {
+      showMeaningsState = !showMeaningsState;
+      const body = document.body;
+      const toggleBtn = document.getElementById('toggleMeaningBtn');
+
+      if (showMeaningsState) {
+        body.classList.add('show-meanings');
+        toggleBtn.innerHTML = '🙈 한국어 뜻 숨기기';
+      } else {
+        body.classList.remove('show-meanings');
+        toggleBtn.innerHTML = '👁️ 한국어 뜻 / 해석 보기';
+      }
+    }
+
+    function resetAll() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      currentSelected = [null, null, null, null];
+      showMeaningsState = false;
+      document.body.classList.remove('show-meanings');
+
+      for (let i = 0; i < 4; i++) {
+        const cardEl = document.getElementById(`card-${i}`);
+        cardEl.className = 'result-card';
+        cardEl.innerHTML = `<div class="empty-prompt">카드를 뽑아주세요</div>`;
+      }
+
+      document.getElementById('completeSentence').innerHTML = `
+        <span class="empty-prompt">4개의 카드를 모두 뽑으면 완전한 문장이 조립됩니다.</span>
+      `;
+      document.getElementById('toggleMeaningBtn').style.display = 'none';
+      document.getElementById('toggleMeaningBtn').innerHTML = '👁️ 한국어 뜻 / 해석 보기';
+      document.getElementById('speakBtn').style.display = 'none';
+      document.getElementById('koreanTranslationBox').innerHTML = '';
+    }
+
+    function speakCompleteSentence() {
+      if (!currentSelected.every(item => item !== null)) return;
+      const textToSpeak = currentSelected.map(item => item.ja).join(' ');
+      playJapaneseVoice(textToSpeak);
+    }
+  </script>
+</body>
+</html>
